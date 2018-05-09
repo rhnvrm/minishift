@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/minishift/minishift/cmd/testing/cli"
@@ -75,5 +76,48 @@ func TestConfigView(t *testing.T) {
 		template := determineTemplate(tt.template)
 		configView(configTest, template, tee.StdoutBuffer)
 		assert.Equal(t, tt.expectedString, tee.StdoutBuffer.String())
+	}
+}
+
+func TestAlignTabbedLines(t *testing.T) {
+	type args struct {
+		lines []string
+	}
+	tests := []struct {
+		args     args
+		expected string
+	}{
+		{
+			args: args{
+				lines: []string{
+					"small\t: SomeValue",
+					"veryLongKeyForTestingAgainstSmallKey\t: AnotherValue",
+				},
+			},
+			expected: "small\t\t\t\t\t: SomeValue\nveryLongKeyForTestingAgainstSmallKey\t: AnotherValue\n",
+		},
+		{
+			args: args{
+				lines: []string{
+					"smallKeyOne\t: SomeValue",
+					"smallKeyTwo\t: AnotherValue",
+				},
+			},
+			expected: "smallKeyOne\t: SomeValue\nsmallKeyTwo\t: AnotherValue\n",
+		},
+		{
+			args: args{
+				lines: []string{
+					"urlKey\t: 'http://minishift.io/'",
+				},
+			},
+			expected: "urlKey\t: 'http://minishift.io/'\n",
+		},
+	}
+	for _, tt := range tests {
+		writer := &bytes.Buffer{}
+		alignTabbedLines(writer, tt.args.lines)
+		actual := writer.String()
+		assert.Equal(t, tt.expected, actual)
 	}
 }

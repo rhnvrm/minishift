@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"sort"
+	"text/tabwriter"
 	"text/template"
 
 	"github.com/minishift/minishift/pkg/util/os/atexit"
@@ -29,7 +30,7 @@ import (
 )
 
 const (
-	DefaultConfigViewFormat = "- {{.ConfigKey | printf \"%-21s\"}}: {{.ConfigValue}}"
+	DefaultConfigViewFormat = "- {{.ConfigKey}}\t: {{.ConfigValue}}"
 )
 
 var configViewFormat string
@@ -74,6 +75,15 @@ func determineTemplate(tempFormat string) (tmpl *template.Template) {
 	return tmpl
 }
 
+func alignTabbedLines(writer io.Writer, lines []string) {
+	w := new(tabwriter.Writer)
+	w.Init(writer, 0, 8, 0, '\t', 0)
+	for _, line := range lines {
+		fmt.Fprintln(w, line)
+	}
+	w.Flush()
+}
+
 func configView(cfg MinishiftConfig, tmpl *template.Template, writer io.Writer) error {
 	var lines []string
 	for k, v := range cfg {
@@ -89,10 +99,7 @@ func configView(cfg MinishiftConfig, tmpl *template.Template, writer io.Writer) 
 		lines = append(lines, buffer.String())
 	}
 	sort.Strings(lines)
-
-	for _, line := range lines {
-		fmt.Fprintln(writer, line)
-	}
+	alignTabbedLines(writer, lines)
 
 	return nil
 }
